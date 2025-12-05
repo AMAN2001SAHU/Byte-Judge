@@ -1,0 +1,9 @@
+{
+  "name": "bytejudge",
+  "private": true,
+  "workspaces": [
+    "api",
+    "frontend",
+    "runner"
+  ]
+}
