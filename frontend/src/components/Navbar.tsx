@@ -1,5 +1,6 @@
 import { Menu, Moon, Sun } from 'lucide-react';
 import { useUI } from '../hooks/useUI';
+import { Link } from 'react-router-dom';
 
 export default function Navbar() {
   const { toggleSidebar, toggleDarkMode, darkMode } = useUI();
@@ -17,9 +18,15 @@ export default function Navbar() {
 
         {/* DESKTOP NAVIGATION */}
         <div className="hidden md:flex gap-6 text-sm font-medium">
-          <button className="hover:text-primary">Problems</button>
-          <button className="hover:text-primary">Submissions</button>
-          <button className="hover:text-primary">Leaderboard</button>
+          <Link to={'/problems'} className="hover:text-primary">
+            Problems
+          </Link>
+          <Link to={'/submissions'} className="hover:text-primary">
+            Submissions
+          </Link>
+          <Link to={'/leaderboard'} className="hover:text-primary">
+            Leaderboard
+          </Link>
         </div>
 
         {/* Toggle Dark Mode */}

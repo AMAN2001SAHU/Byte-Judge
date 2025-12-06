@@ -1,8 +1,9 @@
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import { useUI } from '../hooks/useUI';
+import { Outlet } from 'react-router-dom';
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function Layout() {
   const { darkMode, sidebarOpen, toggleSidebar } = useUI();
 
   return (
@@ -22,7 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
 
         <main className="px-4 md:px-6 py-6 max-w-6xl mx-auto w-full">
-          <div className="space-y-4">{children}</div>
+          <Outlet />
         </main>
       </div>
     </div>
