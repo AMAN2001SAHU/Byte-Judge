@@ -7,12 +7,14 @@ type Props = {
   problemId?: string | number;
   defaultLang?: 'javascript' | 'python' | 'cpp';
   defaultCode?: string;
+  stdin: string;
+  setOutput: (v: string) => void;
 };
 
 const starterCode: Record<string, string> = {
   javascript: `// Javascript (Node.js)
     function solve(input) {
-        const nums = input.trim().split(/\s+/).map(Number);
+        const nums = input.trim().split(/\\s+/).map(Number);
         console.log(nums.join(","));
     }
     const fs = require("fs");
@@ -31,7 +33,7 @@ const starterCode: Record<string, string> = {
         string s;
         // read all input
         string input;
-        while(getline(cin, s)) { input += s + "\n";}
+        while(getline(cin, s)) { input += s + "";}
         cout << input;
         return 0;
     }`,
@@ -41,13 +43,14 @@ export default function CodeEditor({
   problemId,
   defaultLang = 'javascript',
   defaultCode,
+  stdin,
+  setOutput,
 }: Props) {
   const [language, setLanguage] = useState<string>(defaultLang);
   const [code, setCode] = useState<string>(
     defaultCode ?? starterCode[defaultLang]
   );
-  const [stdin, setStdin] = useState<string>('');
-  const [output, setOutput] = useState<string>('');
+
   const [running, setRunning] = useState<boolean>(false);
   const termRef = useRef<Terminal | null>(null);
   const termContainerRef = useRef<HTMLDivElement | null>(null);
@@ -110,10 +113,10 @@ export default function CodeEditor({
           className="border rounded px-2 py-1 bg-background text-foreground"
           value={language}
           onChange={(e) => {
-            setLanguage(e.target.value);
-            // setLanguage(nextLang);
+            const nextLang = e.target.value as 'javascript' | 'python' | 'cpp';
+            setLanguage(nextLang);
             if (!code || code == starterCode[language]) {
-              setCode(starterCode[e.target.value]);
+              setCode(starterCode[nextLang]);
             }
           }}
         >
@@ -148,9 +151,9 @@ export default function CodeEditor({
         <div className="flex-1 border rounded overflow-hidden">
           <Editor
             height="100%"
-            defaultLanguage={language}
             language={language}
             value={code}
+            theme="vs-dark"
             onChange={(v) => v !== undefined && setCode(v)}
             onMount={onEditorMount}
             options={{
@@ -160,36 +163,7 @@ export default function CodeEditor({
             }}
           />
         </div>
-
-        {/* Right Side: stdin + terminal */}
-        {/* <div className="w-80 flex flex-col gap-2">
-          <div>
-            <label className="text-sm block mb-1">Custom Input</label>
-            <textarea
-              className="w-full h-28 border rounded p-2 text-sm bg-background text-foreground"
-              value={stdin}
-              onChange={(e) => setStdin(e.target.value)}
-            />
-          </div>
-
-          <div className="flex-1 border rounded bg-black/80 text-white text-xs overflow-auto">
-            <div
-              ref={termContainerRef}
-              style={{ height: '100%', width: '100%' }}
-            />
-          </div>
-        </div> */}
       </div>
-
-      {/* <div className="mt-2 text-xs text-muted-foreground">
-              Output shown above. For production, outputs should be streamed via
-              WebSocket/
-            </div> */}
-
-      {/* Output area(text fallback) */}
-      <pre className="bg-[#0b1220] text-white p-3 rounded text-sm overflow-auto max-h-40">
-        {output}
-      </pre>
     </div>
   );
 }

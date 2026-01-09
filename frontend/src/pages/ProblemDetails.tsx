@@ -5,10 +5,14 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 export default function ProblemDetails() {
   const { id } = useParams();
+  const [stdin, setStdin] = useState<string>('');
+  const [output, setOutput] = useState<string>('');
 
   const problem = {
     id,
@@ -37,7 +41,7 @@ export default function ProblemDetails() {
   };
 
   return (
-    <div className="h-full">
+    <div className="h-[calc(100vh-3.5rem-3rem)]">
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel defaultSize={50} minSize={30}>
           <div className="h-full overflow-auto p-4 space-y-6">
@@ -106,7 +110,7 @@ export default function ProblemDetails() {
             </div>
           </div>
         </ResizablePanel>
-        <ResizableHandle />
+        <ResizableHandle withHandle />
 
         <ResizablePanel
           defaultSize={50}
@@ -116,20 +120,43 @@ export default function ProblemDetails() {
           <ResizablePanelGroup direction="vertical">
             {/* Code Editor */}
             <ResizablePanel defaultSize={70} minSize={40}>
-              <CodeEditor problemId={id} defaultLang="javascript" />
+              <CodeEditor
+                problemId={id}
+                defaultLang="javascript"
+                stdin={stdin}
+                setOutput={setOutput}
+              />
             </ResizablePanel>
 
-            <ResizableHandle />
+            <ResizableHandle withHandle />
 
             {/* Custom Input (collapsible) */}
             <ResizablePanel defaultSize={30} minSize={10} collapsible>
-              <div className="h-full p-3 space-y-2">
-                <label className="text-sm font-medium">Custom Input</label>
-                <textarea
-                  className="w-full h-full resize-none rounded border p-2 bg-background text-foreground"
-                  placeholder="Enter custom input here..."
-                />
-              </div>
+              <Tabs
+                defaultValue="input"
+                className="h-full flex flex-col overflow-hidden pt-2"
+              >
+                <TabsList className="w-full justify-start shrink-0">
+                  <TabsTrigger value="input">Input</TabsTrigger>
+                  <TabsTrigger value="output">Output</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="input" className="flex-1 mt-2">
+                  <textarea
+                    className="w-full h-full resize-none rounded border p-2 bg-background text-foreground"
+                    placeholder="Enter custom input here..."
+                  />
+                </TabsContent>
+
+                <TabsContent
+                  value="output"
+                  className="flex-1 overflow-auto mt-2"
+                >
+                  <pre className="w-full h-full bg-black/80 text-white p-2 rounded text-sm">
+                    Output will appear here...
+                  </pre>
+                </TabsContent>
+              </Tabs>
             </ResizablePanel>
           </ResizablePanelGroup>
         </ResizablePanel>
