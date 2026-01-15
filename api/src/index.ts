@@ -1,18 +1,15 @@
-import bodyParser from 'body-parser';
-import express from 'express';
-import path from 'path';
-import fs from 'fs';
-import { error } from 'console';
-import { exec } from 'child_process';
-import { exitCode, stderr, stdout } from 'process';
+import bodyParser from "body-parser";
+import express from "express";
+import path from "path";
+import fs from "fs";
+import { exec } from "child_process";
 
 const app = express();
 const PORT = 8000;
 
-// app.use(express.json());
-app.use(bodyParser.json({ limit: '1mb' }));
+app.use(bodyParser.json({ limit: "1mb" }));
 
-app.post('/api/run', async (req, res) => {
+app.post("/api/run", async (req, res) => {
   const { code, language, stdin } = req.body as {
     code: string;
     language: string;
@@ -20,28 +17,28 @@ app.post('/api/run', async (req, res) => {
   };
 
   const id = Date.now().toString();
-  const dir = path.join(__dirname, '..', 'runs', id);
+  const dir = path.join(__dirname, "..", "runs", id);
   fs.mkdirSync(dir, { recursive: true });
 
   try {
     let fileName: string;
     let cmd: string;
 
-    if (language == 'javascript') {
-      fileName = 'main.js';
+    if (language == "javascript") {
+      fileName = "main.js";
       fs.writeFileSync(path.join(dir, fileName), code);
 
       cmd = `node ${fileName}`;
-    } else if (language == 'python') {
-      fileName = 'main.py';
+    } else if (language == "python") {
+      fileName = "main.py";
       fs.writeFileSync(path.join(dir, fileName), code);
       cmd = `python3 ${fileName}`;
-    } else if (language == 'cpp') {
-      fileName = 'main.cpp';
+    } else if (language == "cpp") {
+      fileName = "main.cpp";
       fs.writeFileSync(path.join(dir, fileName), code);
-      cmd = `g++ ${fileName} -02 -std=c++17 -o main.exe && ./main.exe`;
+      cmd = `g++ ${fileName} -O2 -std=c++17 -o main && ./main`;
     } else {
-      return res.status(400).json({ error: 'Unsupported Language' });
+      return res.status(400).json({ error: "Unsupported Language" });
     }
 
     const child = exec(
@@ -69,9 +66,8 @@ app.post('/api/run', async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
-  //   res.status(200).json('Everything working fine');
-  res.send('API working fine');
+app.get("/", (req, res) => {
+  res.send("API working fine");
 });
 
 app.listen(PORT, () => {

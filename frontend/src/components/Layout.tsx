@@ -1,10 +1,12 @@
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import { useUI } from '../hooks/useUI';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useMatch } from 'react-router-dom';
 
 export default function Layout() {
   const { darkMode, sidebarOpen, toggleSidebar } = useUI();
+
+  const isProblemPage = useMatch("/problems/:id");
 
   return (
     <div className={darkMode ? 'dark' : ''}>
@@ -22,7 +24,7 @@ export default function Layout() {
           />
         )}
 
-        <main className="px-4 md:px-6 py-6 max-w-6xl mx-auto w-full">
+        <main className={isProblemPage ? "w-full h-[calc(100vh-3.5rem)] overflow-hidden" : "px-4 md:px-6 py-6 max-w-6xl mx-auto w-full"}>
           <Outlet />
         </main>
       </div>
