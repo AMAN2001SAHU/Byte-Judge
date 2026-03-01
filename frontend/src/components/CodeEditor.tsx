@@ -86,6 +86,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, Props>(
               language={language}
               value={code}
               theme="vs-dark"
+              loading={<div className="p-4">Loading editor....</div>}
               onChange={(v) => v !== undefined && setCode(v)}
               options={{
                 minimap: { enabled: false },

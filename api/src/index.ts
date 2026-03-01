@@ -1,73 +1,86 @@
 import bodyParser from "body-parser";
 import express from "express";
-import path from "path";
-import fs from "fs";
-import { exec } from "child_process";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
+
+import { runCPP } from "./judge/runCPP";
+import { runPython } from "./judge/runPython";
 
 const app = express();
 const PORT = 8000;
 
+app.use(cors());
 app.use(bodyParser.json({ limit: "1mb" }));
 
-app.post("/api/run", async (req, res) => {
-  const { code, language, stdin } = req.body as {
-    code: string;
-    language: string;
-    stdin?: string;
-  };
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 10,
+  message: "Too many requests, please try again later"
+})
 
-  const id = Date.now().toString();
-  const dir = path.join(__dirname, "..", "runs", id);
-  fs.mkdirSync(dir, { recursive: true });
-
+app.post("/api/run", limiter, async (req, res) => {
   try {
-    let fileName: string;
-    let cmd: string;
+    const { code, language, stdin } = req.body as {
+      code: string;
+      language: "cpp" | "python";
+      stdin?: string;
+    };
 
-    if (language == "javascript") {
-      fileName = "main.js";
-      fs.writeFileSync(path.join(dir, fileName), code);
+    // Valid input
+    if (!code || !language) {
+      return res.status(400).json({ error: "Code and language are required" });
+    }
 
-      cmd = `node ${fileName}`;
-    } else if (language == "python") {
-      fileName = "main.py";
-      fs.writeFileSync(path.join(dir, fileName), code);
-      cmd = `python3 ${fileName}`;
-    } else if (language == "cpp") {
-      fileName = "main.cpp";
-      fs.writeFileSync(path.join(dir, fileName), code);
-      cmd = `g++ ${fileName} -O2 -std=c++17 -o main && ./main`;
+    if (code.trim().length === 0) {
+      return res.status(400).json({ error: "Code cannot be empty" });
+    }
+
+    if (code.length > 100000) {
+      return res
+        .status(400)
+        .json({ error: "Code exceeds maximum length of 100KB" });
+    }
+
+    if (language !== "cpp" && language !== "python") {
+      return res
+        .status(400)
+        .json({ error: "Only C++ and Python are supported" });
+    }
+
+    let result;
+
+    if (language === "cpp") {
+      result = await runCPP(code, stdin);
     } else {
-      return res.status(400).json({ error: "Unsupported Language" });
+      result = await runPython(code, stdin);
     }
 
-    const child = exec(
-      cmd,
-      { cwd: dir, timeout: 5000, maxBuffer: 10 * 1024 * 1024 },
-      (err, stdout, stderr) => {
-        if (err) {
-          const exitCode = (err as any).code ?? 1;
-          res.json({ exitCode, stdout, stderr: stderr || err.message });
-        } else {
-          res.json({ exitCode: 0, stdout, stderr });
-        }
-        // cleanup optionally
-        fs.rmSync(dir, { recursive: true, force: true });
-      }
-    );
-
-    if (stdin) {
-      child.stdin?.write(stdin);
-      child.stdin?.end();
-    }
-  } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ error: err?.message ?? String(err) });
+    res.json({
+      status: "ok",
+      language: language,
+      verdict:
+        result.exitCode === 0
+          ? "ACCEPTED"
+          : result.exitCode === 124
+          ? "TLE"
+          : "RUNTIME_ERROR",
+      ...result,
+    });
+  } catch (error) {
+    console.error("Error executing code: ", error);
+    res.status(500).json({
+      error: "Internal server error while executing code",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 });
 
 app.get("/", (req, res) => {
   res.send("API working fine");
+});
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 app.listen(PORT, () => {

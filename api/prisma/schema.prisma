@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  password      String
+  createAt      DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  submissions   Submission[]
+
+  @@map("users")
+}
+
+model Problem {
+  id            String      @id @default(cuid())
+  title         String
+  slug          String      @unique
+  description   String      @db.Text
+  difficulty    Difficulty
+  acceptance    Float       @default(0)
+  createAt      DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  examples      Example[]
+  constraints   Constraint[]
+  testcases     TestCase[]
+  submissions   Submission[]
+  tags          ProblemTag[]
+
+  @@map("problems")
+}
+
+model Example {
+  id          String    @id @default(cuid())
+  problemId   String
+  input       String    @db.Text
+  output      String    @db.Text
+  explanation String?   @db.Text
+  order       Int       @default(0)
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@map("examples")
+}
+
+model Constraint {
+  id        String    @id @default(cuid())
+  problemId String
+  text      String    @db.Text
+  order     Int       @default(0)
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@map("constrains")
+}
+
+model TestCase {
+  id        String    @id @default(cuid())
+  problemId String
+  input     String    @db.Text
+  output    String    @db.Text
+  isHidden  Boolean   @default(false)
+  order     Int       @default(0)
+
+  problem Problem @relation(fields: [problemId],  references: [id], onDelete: Cascade)
+
+  @@map("test_cases")
+}
+
+model Submission {
+  id          String    @id @default(cuid())
+  userId      String
+  problemId   String
+  code        String    @db.Text
+  language    Language
+  timeMs      Int?
+  memoryKb    Int?
+  stdout      String?   @db.Text
+  stderr      String?   @db.Text
+  failedTest  Int?
+  submittedAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([problemId])
+  @@index([submittedAt])
+  @@map("submissions")
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+
+  problems  ProblemTag[]
+
+  @@map("tags")
+}
+
+model ProblemTag {
+  problemId   String
+  tagId       String
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, tagId])
+  @@map("problem_tags")
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum Language {
+  CPP
+  PYTHON
+  JAVASCRIPT
+}
+
+enum Verdict {
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT
+  MEMORY_LIMIT
+  RUNTIME_ERROR
+  COMPILATION_ERROR
+}

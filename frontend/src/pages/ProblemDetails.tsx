@@ -26,9 +26,10 @@ export default function ProblemDetails() {
   const [stdin, setStdin] = useState<string>("");
   const [output, setOutput] = useState<string>("");
   const [running, setRunning] = useState<boolean>(false);
-  const [submiting, setsubmiting] = useState<boolean>(false);
+  const [submiting, submitting] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<OutputTab>("input");
   const [submission, setSubmission] = useState<SubmissionResult | null>(null);
+  const API_URL = import.meta.env.VITE_API_URL || '';
 
   function isOutputTab(v: string): v is OutputTab {
     return v === "input" || v === "output";
@@ -43,24 +44,35 @@ export default function ProblemDetails() {
     const code = editorRef.current.getCode();
     const language = editorRef.current.getLanguage();
 
+    if(!code || code.trim().length === 0) {
+      setOutput("Error: code cannot be empty");
+      setActiveTab("output");
+      return;
+    }
+
     try {
-      const res = await fetch("/api/run", {
+      const res = await fetch(`${API_URL}/api/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, language, stdin }),
       });
 
-      if (!res.ok) {
-        throw new Error(`Request failed: ${res.status}`);
-      }
-
       const data = await res.json();
 
-      const text = `exitCode: ${data.exitCode}\n\nstdout:\n${data.stdout}\n\nstderr:\n${data.stderr}`;
+      if (!res.ok) {
+        throw new Error(data.error || `Request failed: ${res.status}`);
+      }
+
+      const text = `exitCode: ${data.exitCode}\nTime: ${
+        data.timeMs
+      }ms\nExit Code: ${data.exitCode}\n\n=== STDOUT ===\n${
+        data.stdout || "(empty)"
+      }\n\n=== STDERR ===\n${data.stderr || "(empty)"}`;
 
       setOutput(text);
       setActiveTab("output");
     } catch (err) {
+      console.log("reached here")
       const msg = err instanceof Error ? err.message : "Unknown error occurred";
       setOutput(msg);
       setActiveTab("output");
@@ -69,64 +81,64 @@ export default function ProblemDetails() {
     }
   }
 
-  async function submitCode() {
-    // await runCode();
-    if (!editorRef.current) return;
-
-    setRunning(true);
-    setSubmission(null);
-    setsubmiting(true);
-
-    const code = editorRef.current.getCode();
-    const language = editorRef.current.getLanguage();
-
-    try {
-      const res = await fetch("/api/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          problemId: id,
-          code,
-          language,
-          stdin,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Submit failed: ${res.status}`);
-      }
-
-      const data: SubmissionResult = await res.json();
-      setSubmission(data);
-      setActiveTab("output");
-    } catch (err) {
-      setSubmission({
-        submissionId: "error",
-        status: "RUNTIME_ERROR",
-        timeMs: 0,
-        memoryKb: 0,
-        stderr: err instanceof Error ? err.message : "Unknown submission error",
-      });
-      setActiveTab("output");
-    } finally {
-      setRunning(false);
-      setsubmiting(false);
-    }
-  }
   // async function submitCode() {
-  //   setsubmiting(true);
-  //   setTimeout(() => {
-  //     setSubmission({
-  //       submissionId: "mock_1",
-  //       status: "ACCEPTED",
-  //       timeMs: 28,
-  //       memoryKb: 12288,
+  //   // await runCode();
+  //   if (!editorRef.current) return;
+
+  //   setRunning(true);
+  //   setSubmission(null);
+  //   submitting(true);
+
+  //   const code = editorRef.current.getCode();
+  //   const language = editorRef.current.getLanguage();
+
+  //   try {
+  //     const res = await fetch("/api/submit", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         problemId: id,
+  //         code,
+  //         language,
+  //         stdin,
+  //       }),
   //     });
-  //     setRunning(false);
-  //     setsubmiting(false);
+
+  //     if (!res.ok) {
+  //       throw new Error(`Submit failed: ${res.status}`);
+  //     }
+
+  //     const data: SubmissionResult = await res.json();
+  //     setSubmission(data);
   //     setActiveTab("output");
-  //   }, 800);
+  //   } catch (err) {
+  //     setSubmission({
+  //       submissionId: "error",
+  //       status: "RUNTIME_ERROR",
+  //       timeMs: 0,
+  //       memoryKb: 0,
+  //       stderr: err instanceof Error ? err.message : "Unknown submission error",
+  //     });
+  //     setActiveTab("output");
+  //   } finally {
+  //     setRunning(false);
+  //     submitting(false);
+  //   }
   // }
+  async function submitCode() {
+    submitting(true);
+    setTimeout(() => {
+      setSubmission({
+        submissionId: "mock_1",
+        status: "ACCEPTED",
+        timeMs: 28,
+        memoryKb: 12288,
+      });
+      setRunning(false);
+      submitting(false);
+      setActiveTab("output");
+    }, 800);
+  }
 
   const problem = {
     id,
@@ -307,7 +319,7 @@ export default function ProblemDetails() {
                   className="flex-1 overflow-auto mt-2"
                 >
                   <pre className="w-full h-full bg-black/80 text-white p-2 rounded text-sm">
-                    {output || "Run code to the output"}
+                    {output || "Run code to see the output"}
                   </pre>
                 </TabsContent>
               </Tabs>

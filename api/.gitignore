@@ -1,0 +1,9 @@
+node_modules/
+runs/
+.env
+*.log
+dist/
+/src/generated/prisma
+
+# Prisma
+prisma/migrations/
