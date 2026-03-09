@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 
 import { runCPP } from "./judge/runCPP";
 import { runPython } from "./judge/runPython";
+import problemRoutes from "./routes/problem.routes";
 
 const app = express();
 const PORT = 8000;
@@ -15,10 +16,13 @@ app.use(bodyParser.json({ limit: "1mb" }));
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 10,
-  message: "Too many requests, please try again later"
-})
+  message: "Too many requests, please try again later",
+});
 
-app.post("/api/run", limiter, async (req, res) => {
+app.use(limiter);
+app.use("/api/problems", problemRoutes);
+
+app.post("/api/run", async (req, res) => {
   try {
     const { code, language, stdin } = req.body as {
       code: string;

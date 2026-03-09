@@ -12,7 +12,7 @@ model User {
   email         String    @unique
   username      String    @unique
   password      String
-  createAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   submissions   Submission[]
@@ -27,7 +27,7 @@ model Problem {
   description   String      @db.Text
   difficulty    Difficulty
   acceptance    Float       @default(0)
-  createAt      DateTime    @default(now())
+  createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   examples      Example[]
@@ -60,7 +60,7 @@ model Constraint {
 
   problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 
-  @@map("constrains")
+  @@map("constraints")
 }
 
 model TestCase {
@@ -82,6 +82,7 @@ model Submission {
   problemId   String
   code        String    @db.Text
   language    Language
+  verdict     Verdict   @default(ACCEPTED)
   timeMs      Int?
   memoryKb    Int?
   stdout      String?   @db.Text
