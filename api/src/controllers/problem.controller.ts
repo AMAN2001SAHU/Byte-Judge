@@ -4,7 +4,6 @@ import {
   CreateProblemInput,
   UpdateProblemInput,
 } from "../validators/problem.validator";
-import { includes, tuple } from "zod";
 
 export const getAllProblems = async (req: Request, res: Response) => {
   try {
@@ -35,6 +34,7 @@ export const getAllProblems = async (req: Request, res: Response) => {
           title: true,
           slug: true,
           difficulty: true,
+          category: true,
           acceptance: true,
           _count: {
             select: {
@@ -57,8 +57,8 @@ export const getAllProblems = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching problems: ", error),
-      res.status(500).json({ error: "Failed to fetch problems" });
+    console.error("Error fetching problems: ", error);
+    res.status(500).json({ error: "Failed to fetch problems" });
   }
 };
 
@@ -76,6 +76,7 @@ export const getProblemBySlug = async (req: Request, res: Response) => {
           orderBy: { order: "asc" },
           select: { id: true, input: true, output: true },
         },
+        starterCode: true,
         tags: {
           include: {
             tag: true,
@@ -115,6 +116,7 @@ export const createProblem = async (req: Request, res: Response) => {
         slug: data.slug,
         description: data.description,
         difficulty: data.difficulty,
+        category: data.category,
         examples: {
           create: data.examples.map((ex, idx) => ({
             input: ex.input,
@@ -137,6 +139,14 @@ export const createProblem = async (req: Request, res: Response) => {
             order: idx,
           })),
         },
+        starterCode: data.starterCodes
+          ? {
+              create: data.starterCodes.map((sc) => ({
+                language: sc.language,
+                code: sc.code,
+              })),
+            }
+          : undefined,
         tags: data.tags
           ? {
               create: await Promise.all(
@@ -160,6 +170,7 @@ export const createProblem = async (req: Request, res: Response) => {
         examples: true,
         constraints: true,
         testcases: true,
+        starterCode: true,
         tags: { include: { tag: true } },
       },
     });
@@ -184,7 +195,12 @@ export const updateProblem = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Problem not found" });
     }
 
-    if (data.examples || data.constraints || data.testCases) {
+    if (
+      data.examples ||
+      data.constraints ||
+      data.testCases ||
+      data.starterCodes
+    ) {
       await Promise.all([
         data.examples
           ? prisma.example.deleteMany({ where: { problemId: existing.id } })
@@ -194,6 +210,9 @@ export const updateProblem = async (req: Request, res: Response) => {
           : Promise.resolve(),
         data.testCases
           ? prisma.testCase.deleteMany({ where: { problemId: existing.id } })
+          : Promise.resolve(),
+        data.starterCodes
+          ? prisma.starterCode.deleteMany({ where: { problemId: existing.id } })
           : Promise.resolve(),
       ]);
     }
@@ -205,6 +224,7 @@ export const updateProblem = async (req: Request, res: Response) => {
         slug: data.slug,
         description: data.description,
         difficulty: data.difficulty,
+        category: data.category,
         examples: data.examples
           ? {
               create: data.examples.map((ex, idx) => ({
@@ -233,11 +253,20 @@ export const updateProblem = async (req: Request, res: Response) => {
               })),
             }
           : undefined,
+        starterCode: data.starterCodes
+          ? {
+              create: data.starterCodes.map((sc) => ({
+                language: sc.language,
+                code: sc.code,
+              })),
+            }
+          : undefined,
       },
       include: {
         examples: true,
         constraints: true,
         testcases: true,
+        starterCode: true,
         tags: { include: { tag: true } },
       },
     });
@@ -258,7 +287,7 @@ export const deleteProblem = async (req: Request, res: Response) => {
     });
 
     if (!problem) {
-      res.status(404).json({ error: "Problem not found" });
+      return res.status(404).json({ error: "Problem not found" });
     }
 
     await prisma.problem.delete({

@@ -26,6 +26,7 @@ model Problem {
   slug          String      @unique
   description   String      @db.Text
   difficulty    Difficulty
+  category      Category
   acceptance    Float       @default(0)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -35,6 +36,7 @@ model Problem {
   testcases     TestCase[]
   submissions   Submission[]
   tags          ProblemTag[]
+  starterCode   StarterCode[]
 
   @@map("problems")
 }
@@ -42,8 +44,8 @@ model Problem {
 model Example {
   id          String    @id @default(cuid())
   problemId   String
-  input       String    @db.Text
-  output      String    @db.Text
+  input       Json
+  output      Json
   explanation String?   @db.Text
   order       Int       @default(0)
 
@@ -66,8 +68,8 @@ model Constraint {
 model TestCase {
   id        String    @id @default(cuid())
   problemId String
-  input     String    @db.Text
-  output    String    @db.Text
+  input     Json
+  output    Json
   isHidden  Boolean   @default(false)
   order     Int       @default(0)
 
@@ -120,6 +122,18 @@ model ProblemTag {
   @@map("problem_tags")
 }
 
+model StarterCode {
+  id        String @id @default(cuid())
+  problemId String
+  language  Language
+  code      String @db.Text
+
+  problem Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, language])
+  @@map("starter_codes")
+}
+
 enum Difficulty {
   EASY
   MEDIUM
@@ -139,4 +153,25 @@ enum Verdict {
   MEMORY_LIMIT
   RUNTIME_ERROR
   COMPILATION_ERROR
+}
+
+enum Category {
+  ARRAY
+  STRING
+  LINKED_LIST
+  TREE
+  GRAPH
+  DYNAMIC_PROGRAMMING
+  SORTING
+  SEARCHING
+  HASHING
+  TWO_POINTERS
+  SLIDING_WINDOW
+  BACKTRACKING
+  GREEDY
+  MATH
+  BIT_MANIPULATION
+  STACK
+  QUEUE
+  HEAP
 }
